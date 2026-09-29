@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>EcoShift — Mude o mundo. Encontre o caminho.</title>
+  <meta name="description" content="EcoShift é um jogo 2D indie de plataforma e puzzles onde você alterna entre um mundo poluído e um mundo sustentável para desbravar caminhos.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    window.onerror = function(msg, url, line, col, error) {
+      var b = document.createElement('div');
+      b.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:rgba(220,20,20,0.95);color:#fff;z-index:999999;padding:12px;font-family:monospace;font-size:14px;';
+      b.textContent = 'ERRO: ' + msg + ' (' + url + ':' + line + ':' + col + ')';
+      document.body.appendChild(b);
+    };
+  </script>
+</head>
+<body>
+  <div id="game-container">
+    <!-- Canvas Principal do Jogo -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Overlay de Orientação para Celular (Modo Retrato) -->
+    <div id="rotate-device-overlay" class="hidden">
+      <div class="rotate-content">
+        <div class="rotate-phone-icon">📱 ➔ 🔄</div>
+        <h2>Gire o celular para jogar</h2>
+        <p>EcoShift foi feito para ser jogado na horizontal (modo paisagem).</p>
+      </div>
+    </div>
+
+    <!-- HUD durante Gameplay -->
+    <div id="game-hud" class="hud-layer hidden">
+      <div class="hud-top-left">
+        <span id="hud-level-badge" class="hud-pill">FASE 01</span>
+        <span id="hud-world-badge" class="hud-pill world-polluted">🌫️ POLUÍDO</span>
+        <span id="hud-seeds-badge" class="hud-pill seeds-pill">🌱 <span id="seeds-count">0</span>/<span id="seeds-total">3</span></span>
+      </div>
+
+      <div class="hud-top-center">
+        <div id="hud-hint" class="hud-hint-box">
+          <span class="hint-key">SHIFT</span> Alternar entre os mundos
+        </div>
+      </div>
+
+      <div class="hud-top-right">
+        <button id="btn-audio-toggle" class="hud-icon-btn" title="Ativar/Desativar Som" aria-label="Som">
+          🔊
+        </button>
+        <button id="btn-pause" class="hud-icon-btn" title="Pausar Jogo (ESC)" aria-label="Pausa">
+          ⏸️
+        </button>
+      </div>
+    </div>
+
+    <!-- Controles Virtuais para Celular (Touch) -->
+    <div id="virtual-controls" class="virtual-controls-layer hidden">
+      <!-- D-Pad / Movimento (Esquerda) -->
+      <div class="touch-group touch-movement">
+        <button id="touch-left" class="touch-btn touch-arrow" aria-label="Mover para esquerda">◀</button>
+        <button id="touch-right" class="touch-btn touch-arrow" aria-label="Mover para direita">▶</button>
+      </div>
+
+      <!-- Botões de Ação (Direita) -->
+      <div class="touch-group touch-actions">
+        <button id="touch-interact" class="touch-btn touch-interact hidden" aria-label="Interagir">
+          <span class="btn-sub">E</span>
+          <span class="btn-icon">⚡</span>
+        </button>
+        <button id="touch-jump" class="touch-btn touch-jump" aria-label="Pular">
+          <span class="btn-sub">PULAR</span>
+          <span class="btn-icon">▲</span>
+        </button>
+        <button id="touch-shift" class="touch-btn touch-shift" aria-label="Shift - Alternar Mundo">
+          <span class="btn-shift-glow"></span>
+          <span class="btn-label">SHIFT</span>
+          <span class="btn-desc">MUNDO</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TELA INICIAL (MENU PRINCIPAL) -->
+    <div id="screen-title" class="screen-overlay active">
+      <div class="title-bg-split">
+        <div class="split-side side-polluted">
+          <div class="ambient-smog-layer"></div>
+          <div class="scenery-silhouette polluted-silhouette"></div>
+        </div>
+        <div class="split-divider">
+          <div class="divider-line"></div>
+          <div class="divider-orb"></div>
+        </div>
+        <div class="split-side side-sustainable">
+          <div class="ambient-leaf-layer"></div>
+          <div class="scenery-silhouette sustainable-silhouette"></div>
+        </div>
+      </div>
+
+      <div class="title-content-card">
+        <div class="title-badge-tag">JOGO INDIE 2D</div>
+        <h1 class="main-game-title">
+          <span class="title-eco">ECO</span><span class="title-shift">SHIFT</span>
+        </h1>
+        <p class="main-subtitle">Mude o mundo. Encontre o caminho.</p>
+
+        <div class="menu-button-stack">
+          <button id="btn-play-game" class="btn-indie btn-play">
+            <span class="btn-text">JOGAR</span>
+            <span class="btn-subtext">Iniciar Jornada</span>
+          </button>
+          <div class="secondary-btn-row">
+            <button id="btn-level-select" class="btn-indie btn-secondary">FASES</button>
+            <button id="btn-how-to-play" class="btn-indie btn-secondary">COMO JOGAR</button>
+            <button id="btn-credits" class="btn-indie btn-secondary">CRÉDITOS</button>
+          </div>
+        </div>
+
+        <div class="title-footer-tips">
+          <span>Dica: Use <strong>SHIFT</strong> no teclado ou o botão <strong>SHIFT</strong> no celular para alternar a realidade</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL SELETOR DE FASES -->
+    <div id="modal-levels" class="screen-modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>SELECIONE A FASE</h2>
+          <button class="modal-close" data-close="modal-levels">✕</button>
+        </div>
+        <div class="levels-grid" id="levels-container">
+          <!-- Gerado via JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL COMO JOGAR -->
+    <div id="modal-howtoplay" class="screen-modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>COMO JOGAR</h2>
+          <button class="modal-close" data-close="modal-howtoplay">✕</button>
+        </div>
+        <div class="modal-body howtoplay-body">
+          <div class="controls-guide-grid">
+            <div class="guide-item">
+              <div class="guide-key-badge">A / D ou ← →</div>
+              <div class="guide-label">MOVIMENTAÇÃO</div>
+              <p>Mova o personagem para os lados.</p>
+            </div>
+            <div class="guide-item">
+              <div class="guide-key-badge">ESPAÇO</div>
+              <div class="guide-label">PULAR</div>
+              <p>Salte sobre vãos, plataformas e obstáculos.</p>
+            </div>
+            <div class="guide-item special-guide-item">
+              <div class="guide-key-badge key-shift">SHIFT</div>
+              <div class="guide-label">MUDAR DE MUNDO</div>
+              <p>Alterne entre o Mundo Poluído e o Sustentável instantaneamente.</p>
+            </div>
+            <div class="guide-item">
+              <div class="guide-key-badge">E</div>
+              <div class="guide-label">INTERAGIR</div>
+              <p>Ative painéis solares e interruptores verdes.</p>
+            </div>
+          </div>
+
+          <div class="concept-callout">
+            <div class="callout-icon">💡</div>
+            <div class="callout-text">
+              <strong>Regra de Ouro:</strong> Alguns caminhos, pontes, árvores e portas <em>só existem em um dos dois mundos</em>. Observe o cenário com atenção e troque de mundo para prosseguir!
+            </div>
+          </div>
+
+          <div class="mobile-note-callout">
+            <span>📱 <strong>No Celular:</strong> botões de toque aparecem na tela automaticamente durante a partida.</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-indie btn-secondary" data-close="modal-howtoplay">ENTENDI</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CRÉDITOS -->
+    <div id="modal-credits" class="screen-modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>CRÉDITOS</h2>
+          <button class="modal-close" data-close="modal-credits">✕</button>
+        </div>
+        <div class="modal-body credits-body">
+          <div class="credits-logo-box">
+            <h3>ECOSHIFT</h3>
+            <p class="credits-quote">"Um pequeno jogo sobre transformação e escolhas."</p>
+          </div>
+
+          <div class="credits-details">
+            <div class="credits-line">
+              <span class="cred-role">Projeto:</span>
+              <span class="cred-val">Desenvolvido para projeto escolar</span>
+            </div>
+            <div class="credits-line">
+              <span class="cred-role">Desenvolvimento & Arte:</span>
+              <span class="cred-val" id="credit-dev-name">Projeto de Estudante (HTML5 & Canvas 2D)</span>
+            </div>
+            <div class="credits-line">
+              <span class="cred-role">Efeitos Sonoros:</span>
+              <span class="cred-val">Sintetizador Web Audio API Nativo</span>
+            </div>
+            <div class="credits-line">
+              <span class="cred-role">Ano:</span>
+              <span class="cred-val">2026</span>
+            </div>
+          </div>
+
+          <p class="credits-final-note">
+            Cuidar do planeta é uma escolha contínua. Cada pequena ação sustentável transforma nosso mundo.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-indie btn-secondary" data-close="modal-credits">FECHAR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PAUSA -->
+    <div id="screen-pause" class="screen-overlay hidden">
+      <div class="pause-card">
+        <h2>PAUSADO</h2>
+        <div class="pause-menu-buttons">
+          <button id="btn-pause-resume" class="btn-indie btn-play">Continuar</button>
+          <button id="btn-pause-restart" class="btn-indie btn-secondary">Reiniciar Fase</button>
+          <button id="btn-pause-mute" class="btn-indie btn-secondary">Alternar Som (🔊)</button>
+          <button id="btn-pause-menu" class="btn-indie btn-secondary">Menu Principal</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL VITÓRIA DA FASE -->
+    <div id="screen-victory" class="screen-overlay hidden">
+      <div class="victory-card">
+        <div class="victory-icon-banner">🌱✨</div>
+        <h2 id="victory-title">FASE CONCLUÍDA!</h2>
+        <p id="victory-level-name" class="victory-level-subtitle">Fase 1 — Primeiro Shift</p>
+
+        <div class="victory-stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">Tempo</span>
+            <span id="stat-time" class="stat-value">00:45</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Mudanças de Mundo</span>
+            <span id="stat-shifts" class="stat-value">6</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Sementes</span>
+            <span id="stat-seeds" class="stat-value">3/3</span>
+          </div>
+        </div>
+
+        <div class="victory-buttons">
+          <button id="btn-victory-next" class="btn-indie btn-play">PRÓXIMA FASE</button>
+          <button id="btn-victory-replay" class="btn-indie btn-secondary">JOGAR NOVAMENTE</button>
+          <button id="btn-victory-menu" class="btn-indie btn-secondary">MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL FINAL DO JOGO (VITÓRIA COMPLETA) -->
+    <div id="screen-game-complete" class="screen-overlay hidden">
+      <div class="ending-card">
+        <div class="ending-header">
+          <div class="ending-badge">TRANSFORMAÇÃO COMPLETA</div>
+          <h2>O MUNDO FOI RESTAURADO!</h2>
+        </div>
+        <p class="ending-text">
+          Graças à sua determinação, as usinas poluentes deram lugar a ecossistemas vivos, rios despoluídos e energia limpa. Você provou que cada escolha em direção à sustentabilidade faz a diferença!
+        </p>
+
+        <div class="ending-stats">
+          <p>Obrigado por jogar <strong>EcoShift</strong>!</p>
+        </div>
+
+        <div class="ending-buttons">
+          <button id="btn-ending-play-again" class="btn-indie btn-play">JOGAR NOVAMENTE</button>
+          <button id="btn-ending-menu" class="btn-indie btn-secondary">MENU PRINCIPAL</button>
+          <button id="btn-ending-credits" class="btn-indie btn-secondary">VER CRÉDITOS</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts do Jogo -->
+  <script src="js/audio.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
